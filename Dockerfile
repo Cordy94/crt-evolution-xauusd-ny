@@ -9,39 +9,43 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     sudo \
     curl \
     tzdata \
+    ssh \
+    net-tools \
     && rm -rf /var/lib/apt/lists/*
 
-# Configurar zona horaria
+# Configurar zona horaria NY
 ENV TZ=America/New_York
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-# Crear usuario trader y cambiar permisos ANTES de copiar archivos
+# Crear usuario
 RUN useradd -m -s /bin/bash trader
 RUN echo "trader ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+RUN echo "PasswordAuthentication yes" >> /etc/ssh/sshd_config
+RUN echo "PermitRootLogin no" >> /etc/ssh/sshd_config
+RUN echo "AllowUsers trader" >> /etc/ssh/sshd_config
 
-# Cambiar a usuario trader
+# Configurar Wine
 USER trader
 WORKDIR /home/trader
 ENV WINEPREFIX=/home/trader/.wine
 ENV WINEARCH=win64
 ENV DISPLAY=:99
 
-# Instalar fuentes y configurar Wine
+# Instalar fuentes
 RUN winecfg && winetricks -q corefonts
 
-# Crear carpetas MT5
-RUN mkdir -p "/home/trader/.wine/drive_c/Program Files/MetaTrader 5/MQL5/Experts"
-RUN mkdir -p "/home/trader/.wine/drive_c/Program Files/MetaTrader 5/MQL5/Files"
-RUN mkdir -p "/home/trader/.wine/drive_c/Program Files/MetaTrader 5/MQL5/Profiles/default"
+# Configurar SSH para trader
+RUN mkdir -p /home/trader/.ssh
+RUN ssh-keygen -t rsa -f /home/trader/.ssh/id_rsa -N ""
+RUN cat /home/trader/.ssh/id_rsa.pub >> /home/trader/.ssh/authorized_keys
+RUN chmod 700 /home/trader/.ssh && chmod 600 /home/trader/.ssh/*
 
-# Copiar scripts - IMPORTANTE: Copiar como usuario trader
-COPY --chown=trader:trader start.sh /home/trader/start.sh
-COPY --chown=trader:trader telegram-notify.sh /home/trader/telegram-notify.sh
-
-# Dar permisos de ejecución
+# Scripts
+COPY start.sh /home/trader/start.sh
+COPY telegram-notify.sh /home/trader/telegram-notify.sh
 RUN chmod +x /home/trader/start.sh /home/trader/telegram-notify.sh
 
-# Exponer para posibles conexiones
-EXPOSE 8080
+# Puerto SSH
+EXPOSE 22
 
 CMD ["/home/trader/start.sh"]
