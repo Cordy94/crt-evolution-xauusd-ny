@@ -1,10 +1,11 @@
 services:
   - type: web
-    name: crt-evolution-mt5
+    name: crt-evolution-xauusd
     env: docker
     dockerfilePath: ./Dockerfile
     plan: free
     autoDeploy: true
+    healthCheckPath: /status
     envVars:
       - key: MT5_LOGIN
         value: 91033361
