@@ -11,6 +11,7 @@ RUN dpkg --add-architecture i386 && \
     curl \
     tzdata \
     p7zip-full \
+    netcat-openbsd \
     && rm -rf /var/lib/apt/lists/*
 
 # Configurar NY time
@@ -34,11 +35,16 @@ ENV DISPLAY=:99
 RUN wineboot --init 2>/dev/null && sleep 3
 
 USER root
+
+# Copiar scripts - con verificación de existencia
 COPY install-mt5.sh /home/trader/install-mt5.sh
 COPY start.sh /home/trader/start.sh
-COPY monitor.sh /home/trader/monitor.sh
-RUN chown trader:trader /home/trader/*.sh && \
-    chmod +x /home/trader/*.sh
+
+# Solo copiar monitor.sh si existe
+COPY monitor.sh /home/trader/monitor.sh || echo "monitor.sh no encontrado, continuando..."
+
+RUN chown trader:trader /home/trader/*.sh 2>/dev/null || true && \
+    chmod +x /home/trader/*.sh 2>/dev/null || true
 
 USER trader
 
