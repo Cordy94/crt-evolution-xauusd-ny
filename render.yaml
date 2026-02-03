@@ -4,7 +4,7 @@ services:
     env: docker
     dockerfilePath: ./Dockerfile
     plan: free
-    healthCheckPath: /
+    autoDeploy: true
     envVars:
       - key: MT5_LOGIN
         value: 91033361
@@ -28,4 +28,3 @@ services:
         value: 22
       - key: EA_MAGIC
         value: 240226
-    autoDeploy: true
