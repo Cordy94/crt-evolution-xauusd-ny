@@ -15,11 +15,11 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
 ENV TZ=America/New_York
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-# Crear usuario trader
+# Crear usuario trader y cambiar permisos ANTES de copiar archivos
 RUN useradd -m -s /bin/bash trader
 RUN echo "trader ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
-# Configurar Wine
+# Cambiar a usuario trader
 USER trader
 WORKDIR /home/trader
 ENV WINEPREFIX=/home/trader/.wine
@@ -34,9 +34,11 @@ RUN mkdir -p "/home/trader/.wine/drive_c/Program Files/MetaTrader 5/MQL5/Experts
 RUN mkdir -p "/home/trader/.wine/drive_c/Program Files/MetaTrader 5/MQL5/Files"
 RUN mkdir -p "/home/trader/.wine/drive_c/Program Files/MetaTrader 5/MQL5/Profiles/default"
 
-# Copiar scripts
-COPY start.sh /home/trader/start.sh
-COPY telegram-notify.sh /home/trader/telegram-notify.sh
+# Copiar scripts - IMPORTANTE: Copiar como usuario trader
+COPY --chown=trader:trader start.sh /home/trader/start.sh
+COPY --chown=trader:trader telegram-notify.sh /home/trader/telegram-notify.sh
+
+# Dar permisos de ejecución
 RUN chmod +x /home/trader/start.sh /home/trader/telegram-notify.sh
 
 # Exponer para posibles conexiones
